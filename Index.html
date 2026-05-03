@@ -1,0 +1,77 @@
+<!DOCTYPE html>
+<html lang="de">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Protein Counter</title>
+    <link rel="manifest" href="manifest.json">
+    <meta name="theme-color" content="#2563eb">
+    <link rel="apple-touch-icon" href="icon-192.png">
+    <style>
+        body { font-family: sans-serif; background: #f4f7f6; display: flex; justify-content: center; padding: 20px; }
+        .card { background: white; padding: 2rem; border-radius: 15px; box-shadow: 0 4px 6px rgba(0,0,0,0.1); width: 100%; max-width: 400px; }
+        h2 { color: #333; text-align: center; }
+        .total { font-size: 3rem; font-weight: bold; text-align: center; color: #2563eb; margin: 10px 0; }
+        .unit { font-size: 1.2rem; color: #666; }
+        input { width: 100%; padding: 12px; margin: 10px 0; border: 1px solid #ddd; border-radius: 8px; box-sizing: border-box; font-size: 1rem; }
+        button { width: 100%; padding: 12px; border: none; border-radius: 8px; cursor: pointer; font-size: 1rem; font-weight: bold; transition: 0.2s; }
+        .btn-add { background: #2563eb; color: white; margin-bottom: 10px; }
+        .btn-reset { background: #ef4444; color: white; margin-top: 20px; opacity: 0.8; }
+        .log { margin-top: 20px; border-top: 1px solid #eee; padding-top: 10px; max-height: 150px; overflow-y: auto; }
+        .log-item { display: flex; justify-content: space-between; font-size: 0.9rem; color: #555; padding: 5px 0; }
+    </style>
+</head>
+<body>
+
+<div class="card">
+    <h2>Tages-Protein</h2>
+    <div class="total"><span id="total-val">0</span><span class="unit">g</span></div>
+    <input type="number" id="input-protein" placeholder="Menge in Gramm" inputmode="numeric">
+    <button class="btn-add" onclick="addProtein()">Hinzufügen</button>
+    <div class="log" id="log-list"></div>
+    <button class="btn-reset" onclick="resetAll()">Tag zurücksetzen</button>
+</div>
+
+<script>
+    // Service Worker Registrierung
+    if ('serviceWorker' in navigator) {
+        navigator.serviceWorker.register('sw.js')
+            .then(() => console.log("Service Worker registriert"))
+            .catch(err => console.log("Service Worker Fehler:", err));
+    }
+
+    let total = parseFloat(localStorage.getItem('protein_total')) || 0;
+    let log = JSON.parse(localStorage.getItem('protein_log')) || [];
+
+    function updateUI() {
+        document.getElementById('total-val').innerText = total;
+        const logList = document.getElementById('log-list');
+        logList.innerHTML = log.map(item => `<div class="log-item"><span>${item.time}</span><span>+ ${item.amount}g</span></div>`).reverse().join('');
+        localStorage.setItem('protein_total', total);
+        localStorage.setItem('protein_log', JSON.stringify(log));
+    }
+
+    function addProtein() {
+        const input = document.getElementById('input-protein');
+        const val = parseFloat(input.value);
+        if (val > 0) {
+            total += val;
+            const now = new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
+            log.push({ amount: val, time: now });
+            input.value = '';
+            updateUI();
+        }
+    }
+
+    function resetAll() {
+        if (confirm('Wirklich alles für heute löschen?')) {
+            total = 0;
+            log = [];
+            updateUI();
+        }
+    }
+    updateUI();
+</script>
+</body>
+</html>
+
